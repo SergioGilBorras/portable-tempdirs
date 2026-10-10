@@ -1,0 +1,43 @@
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.pyright/
+.pyre/
+.hypothesis/
+.venv/
+pytest-runs/
+build/
+dist/
+*.egg-info/
+.eggs/
+pip-wheel-metadata/
+.serena/
+*.log
+.coverage
+htmlcov/
+.tox/
+.nox/
+venv/
+portable-tempdirs-wheel-*/
+
+# Local environments and tool configuration
+.env
+.env.*
+!.env.example
+.idea/
+.vscode/
+.codex/
+
+# Isolated wheel installs and test workspaces
+wheel-install-*/
+portable-tempdirs-install-*/
+portable-tempdirs-test-*/
+portable-tempdirs-diagnosis-*/
+
+# Operating system metadata
+Thumbs.db
+Desktop.ini
+.DS_Store
+._*

@@ -1,0 +1,14 @@
+include LICENSE
+include README.md
+include CHANGELOG.md
+include CONTRIBUTING.md
+include .github/workflows/ci.yml
+include tests/verify_wheel.py
+recursive-include tests *.py
+prune .serena
+prune build
+prune dist
+prune .pytest_cache
+prune .ruff_cache
+global-exclude *.py[cod]
+global-exclude *.log
