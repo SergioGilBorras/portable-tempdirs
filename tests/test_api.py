@@ -24,6 +24,16 @@ class PortableTempdirsTests(unittest.TestCase):
         managed.cleanup()
         self.assertFalse(root.exists())
 
+    def test_cleanup_handles_supplementary_unicode_names(self):
+        managed = temporary_directory("UnicodeChildren")
+        root = Path(managed.name)
+        nested = root / "nested-\U0001f680"
+        nested.mkdir()
+        (nested / "file-\U0001f680.txt").write_text("unicode", encoding="utf-8")
+        (root / "other-\U0001f680.txt").write_text("safe", encoding="utf-8")
+        managed.cleanup()
+        self.assertFalse(root.exists())
+
     def test_default_layout_and_utc_random_name(self):
         managed = temporary_directory("PortableTests")
         path = Path(managed.name)
@@ -61,7 +71,7 @@ class PortableTempdirsTests(unittest.TestCase):
         source = Path(managed.name)
         destination = parent / "moved-workspace"
         backend_module = windows_backend if os.name == "nt" else posix_backend
-        patch_target = "_set_delete" if os.name == "nt" else "shutil.rmtree"
+        patch_target = "_set_delete" if os.name == "nt" else "rmtree"
         patch_owner = backend_module if os.name == "nt" else backend_module.shutil
         try:
             with patch.object(patch_owner, patch_target, side_effect=PermissionError("synthetic denial")):
@@ -210,7 +220,7 @@ class PortableTempdirsTests(unittest.TestCase):
         (root / "nested" / "data.txt").write_text("synthetic", encoding="utf-8")
         try:
             backend_module = windows_backend if os.name == "nt" else posix_backend
-            target = "_set_delete" if os.name == "nt" else "shutil.rmtree"
+            target = "_set_delete" if os.name == "nt" else "rmtree"
             with patch.object(backend_module if os.name == "nt" else backend_module.shutil,
                              target, side_effect=PermissionError("synthetic denial")):
                 with self.assertRaises(TemporaryDirectoryError) as caught:

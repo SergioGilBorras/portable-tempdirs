@@ -31,4 +31,3 @@ where = ["src"]
 [tool.setuptools.package-data]
 portable_tempdirs = ["py.typed"]
 
-\n
