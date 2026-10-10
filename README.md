@@ -4,36 +4,56 @@
 
 ## Install
 
-Create and activate a virtual environment, then install the published package:
+Create a virtual environment; all commands below install into that environment, not global Python:
 
 ```console
 python -m venv .venv
 ```
 
+Version `0.1.1` is not published to PyPI. Obtain the verified
+`portable_tempdirs-0.1.1-py3-none-any.whl` from the maintainer, or build
+it from this checkout. Installing by package name from an index does **not**
+guarantee that you get this source version or the `detach()` API.
+
+To install the local wheel **offline** (adjust the file path if the wheel was
+delivered elsewhere):
+
 On Windows PowerShell:
 
 ```powershell
-.\.venv\Scripts\python.exe -m pip install portable-tempdirs
+.\.venv\Scripts\python.exe -m pip install --no-index --no-deps .\dist\portable_tempdirs-0.1.1-py3-none-any.whl
 ```
 
 On Linux or macOS:
 
 ```console
-.venv/bin/python -m pip install portable-tempdirs
+.venv/bin/python -m pip install --no-index --no-deps ./dist/portable_tempdirs-0.1.1-py3-none-any.whl
 ```
 
-To install a local checkout, run the matching command with `.` instead of the package name.
+The `dist/` directory is generated build output and is excluded from Git;
+the wheel is **not** included in a fresh clone. To install the checked-out
+source instead, run:
 
-Windows PowerShell:
+On Windows PowerShell:
 
 ```powershell
 .\.venv\Scripts\python.exe -m pip install .
 ```
 
-Linux or macOS:
+On Linux or macOS:
 
 ```console
 .venv/bin/python -m pip install .
+```
+
+After installation, verify that the interpreter can use the required API:
+
+```python
+from importlib.metadata import version
+from portable_tempdirs import TemporaryDirectory
+
+assert version("portable-tempdirs") == "0.1.1"
+assert callable(getattr(TemporaryDirectory, "detach", None))
 ```
 
 The package metadata declares version `0.1.1` and Python `>=3.11`. GitHub Actions is configured to test CPython 3.11, 3.12 and 3.13 on Windows, Ubuntu Linux and macOS. A configured matrix does not mean every combination has passed; consult the workflow results for the current status.
