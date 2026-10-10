@@ -381,6 +381,14 @@ class WindowsDirectory:
         except Exception as exc:
             diagnostic = {"phase": "CLEANUP", "category": getattr(exc, "code", type(exc).__name__),
                           "cleanup_status": "PENDING", "directory_id": self.leaf}
+            # No absolute path or exception text: numeric OS status is sufficient
+            # to distinguish transient sharing locks from permission violations.
+            if isinstance(exc, OSError) and not isinstance(exc, TemporaryDirectoryError):
+                native = getattr(exc, "winerror", None)
+                if type(native) is not int:
+                    native = getattr(exc, "errno", None)
+                if type(native) is int:
+                    diagnostic["os_error_code"] = native
             _LOG.error("temporary cleanup deferred: %s", diagnostic)
             if isinstance(exc, TemporaryDirectoryError):
                 exc.diagnostic = diagnostic

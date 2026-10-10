@@ -6,6 +6,7 @@ import os
 import re
 import secrets
 import tempfile
+import time
 from datetime import datetime, timezone
 from pathlib import Path
 from types import TracebackType
@@ -14,6 +15,18 @@ from . import posix_backend, windows_backend
 from .errors import TemporaryDirectoryError
 
 _LOG = logging.getLogger("portable_tempdirs")
+
+# Bounded retry is allowed ONLY for transient Windows sharing/locking statuses.
+_WINDOWS_TRANSIENT_SHARING_CODES = {32, 33, 0xC0000043, 0xC0000054}
+_WINDOWS_CLEANUP_RETRY_DELAYS = (0.05, 0.10, 0.20, 0.40)
+
+
+def _is_transient_windows_cleanup_error(exc: TemporaryDirectoryError) -> bool:
+    d = exc.diagnostic
+    return (exc.code == "CLEANUP_INCOMPLETE" and isinstance(d, dict)
+            and type(d.get("os_error_code")) is int
+            and d["os_error_code"] in _WINDOWS_TRANSIENT_SHARING_CODES)
+
 
 _NAMESPACE = re.compile(r"^[A-Za-z][A-Za-z0-9_-]{0,47}$")
 _WINDOWS_RESERVED = {
@@ -177,8 +190,19 @@ class TemporaryDirectory:
         """
         if self._cleaned or self._backend is None:
             return
-        self._backend.cleanup()
-        self._cleaned = True
+        for attempt in range(len(_WINDOWS_CLEANUP_RETRY_DELAYS) + 1):
+            try:
+                self._backend.cleanup()
+            except TemporaryDirectoryError as exc:
+                if (os.name != "nt" or attempt == len(_WINDOWS_CLEANUP_RETRY_DELAYS)
+                        or not _is_transient_windows_cleanup_error(exc)):
+                    raise
+                # The backend closes its handles before returning. Reentry
+                # reopens and rechecks parent and root identities on each try.
+                time.sleep(_WINDOWS_CLEANUP_RETRY_DELAYS[attempt])
+            else:
+                self._cleaned = True
+                return
 
     def detach(self) -> Path:
         """Relinquish cleanup ownership while keeping the directory on disk.
