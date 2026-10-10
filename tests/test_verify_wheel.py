@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import subprocess
+import tomllib
 import sys
 import unittest
 import zipfile
@@ -14,11 +15,13 @@ class VerifyWheelTests(unittest.TestCase):
     def test_rejects_wheel_without_temporary_directory_detach(self) -> None:
         workspace_owner = temporary_directory("StaleWheelTest")
         try:
-            wheel = Path(workspace_owner.name) / "portable_tempdirs-0.1.1-py3-none-any.whl"
+            project = tomllib.loads((Path(__file__).resolve().parents[1] / "pyproject.toml").read_text(encoding="utf-8"))
+            version = project["project"]["version"]
+            wheel = Path(workspace_owner.name) / f"portable_tempdirs-{version}-py3-none-any.whl"
             with zipfile.ZipFile(wheel, "w") as archive:
                 archive.writestr(
-                    "portable_tempdirs-0.1.1.dist-info/METADATA",
-                    "Metadata-Version: 2.1\nName: portable-tempdirs\nVersion: 0.1.1\n",
+                    f"portable_tempdirs-{version}.dist-info/METADATA",
+                    f"Metadata-Version: 2.1\nName: portable-tempdirs\nVersion: {version}\n",
                 )
                 archive.writestr("portable_tempdirs/__init__.py", "")
                 archive.writestr("portable_tempdirs/py.typed", "")

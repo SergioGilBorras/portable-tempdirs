@@ -15,6 +15,55 @@ from portable_tempdirs import TemporaryDirectoryError, temporary_directory
 
 
 class PortableTempdirsTests(unittest.TestCase):
+    def test_transient_cleanup_error_classifier_is_conservative(self):
+        from portable_tempdirs.core import _is_transient_windows_cleanup_error
+        transient = TemporaryDirectoryError("held", code="CLEANUP_INCOMPLETE", diagnostic={"os_error_code": 0xC0000043})
+        self.assertTrue(_is_transient_windows_cleanup_error(transient))
+        for error_code in (5, 87, None, False, "32", 0xC0000022):
+            failure = TemporaryDirectoryError("other", code="CLEANUP_INCOMPLETE", diagnostic={"os_error_code": error_code})
+            self.assertFalse(_is_transient_windows_cleanup_error(failure))
+        identity = TemporaryDirectoryError("identity changed", code="IDENTITY_CHANGED", diagnostic={"os_error_code": 32})
+        self.assertFalse(_is_transient_windows_cleanup_error(identity))
+
+    def test_windows_backend_diagnostic_keeps_code_not_path(self):
+        from portable_tempdirs import windows_backend
+        from unittest.mock import Mock
+        backend = windows_backend.WindowsDirectory(1234, Path("/private-parent"), (1, 2), Path("/private-parent/secret"), "owned", (1, 3))
+        with (patch.object(windows_backend, "_configure_api", return_value=(Mock(), Mock())),
+              patch.object(windows_backend, "_nt_open", side_effect=OSError(0xC0000043, "contains secret path"))):
+            with self.assertRaises(TemporaryDirectoryError) as captured:
+                backend.cleanup()
+        self.assertEqual(captured.exception.diagnostic.get("os_error_code"), 0xC0000043)
+        self.assertNotIn("/private-parent", repr(captured.exception.diagnostic))
+        self.assertNotIn("contains secret", repr(captured.exception.diagnostic))
+
+    @unittest.skipUnless(os.name == "nt", "Windows-specific cleanup retry")
+    def test_windows_cleanup_retries_sharing_not_access_denial(self):
+        owner = temporary_directory("TransientShareRetry")
+        backend = owner._backend
+        actual_cleanup = backend.cleanup
+        calls = []
+        def once():
+            calls.append(1)
+            if len(calls) == 1:
+                raise TemporaryDirectoryError("sharing", code="CLEANUP_INCOMPLETE", diagnostic={"os_error_code": 32})
+            return actual_cleanup()
+        with (patch.object(backend, "cleanup", side_effect=once),
+              patch("portable_tempdirs.core.time.sleep") as sleep):
+            owner.cleanup()
+            sleep.assert_called_once()
+        self.assertEqual(len(calls), 2)
+        self.assertFalse(Path(owner.name).exists())
+        denied = temporary_directory("AccessDeniedNoRetry")
+        backend = denied._backend
+        original = backend.cleanup
+        with (patch.object(backend, "cleanup", side_effect=TemporaryDirectoryError("no", code="CLEANUP_INCOMPLETE", diagnostic={"os_error_code": 5})),
+              patch("portable_tempdirs.core.time.sleep") as sleep):
+            with self.assertRaises(TemporaryDirectoryError):
+                denied.cleanup()
+            sleep.assert_not_called()
+        original()
+
     def test_create_io_nested_cleanup(self):
         managed = temporary_directory("PortableTests")
         root = Path(managed.name)

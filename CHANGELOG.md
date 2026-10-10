@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.2 - 2026-10-10
+
+- Include sanitized numeric Windows OS error codes in managed cleanup diagnostics, never paths or exception text.
+- Retry only transient Windows sharing/file-lock failures with bounded delays and identity-checked reopening; persistently locked resources and all other failures still raise.
+- Add regression checks for diagnostic codes and bounded retry.
+
 ## 0.1.1 - 2026-10-10
 
 - Bumped the package version after `TemporaryDirectory.detach()` was added without changing the `0.1.0` version, which allowed wheels with different APIs to use the same version identifier. The consumer-reported older wheel could not be inspected, so its exact provenance remains unknown.
