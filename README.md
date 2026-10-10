@@ -51,8 +51,11 @@ The returned owner exposes:
 
 - `name: str` and `path: pathlib.Path`, the created directory path.
 - `cleanup()`, which attempts identity-checked cleanup and is a no-op after successful cleanup. It may be retried after a reported failure, without weakening identity checks.
+- `detach()`, which releases the owner's handle/descriptor and retains the directory in place. The caller assumes permanent cleanup responsibility; the owner becomes inactive and a later `cleanup()` is a no-op. Use this for persistent workspaces without leaving handles open.
 - `mark_moved_to(destination)`, which transfers cleanup responsibility after the caller has moved the directory to a sibling path on the same filesystem. This method does not perform the move.
 - `privacy_assessment`, an informational mapping. POSIX reports the literal status `MODE_0700` after checking the directory mode. Windows reports the literal status `NO_VERIFICABLE` (not verifiable), since ACL inheritance is not audited. Neither value attests to host-level effective access.
+
+Use `temporary_directory("my-app").detach()` when a directory must survive after the owning object is discarded. Do not call `detach()` inside a `with` block expecting automatic cleanup; detached content remains for application-managed retention.
 
 The owner has no finalizer. Directories are not automatically removed when the process exits or when an owner is garbage-collected. Use the context manager or call `cleanup()` explicitly. A cleanup error means the tree may remain; inspect the sanitized diagnostic and confirm ownership before manual removal. The library never sweeps old directories.
 

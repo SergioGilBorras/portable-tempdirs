@@ -394,6 +394,15 @@ class WindowsDirectory:
                 _close(self.parent_handle, kernel)
                 self.parent_handle = None
 
+    def detach(self):
+        """Keep the tree and release the parent handle without deleting it."""
+        if self.parent_handle is not None:
+            kernel, _ = _configure_api()
+            if not kernel.CloseHandle(self.parent_handle):
+                raise OSError(ctypes.get_last_error(), "cannot release temporary parent handle")
+            self.parent_handle = None
+        self.cleaned = True
+
     def mark_moved_to(self, destination: Path):
         if destination.parent != self.path.parent:
             raise TemporaryDirectoryError("move destination is not a sibling", code="MOVE_OUTSIDE_PARENT")

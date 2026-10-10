@@ -140,6 +140,13 @@ class PosixDirectory:
                 os.close(self.parent_fd)
                 self.parent_fd = None
 
+    def detach(self):
+        """Keep the tree and release the parent descriptor without deleting it."""
+        if self.parent_fd is not None:
+            os.close(self.parent_fd)
+            self.parent_fd = None
+        self.cleaned = True
+
     def mark_moved_to(self, destination: Path):
         destination = Path(destination)
         if destination.parent != self.path.parent:

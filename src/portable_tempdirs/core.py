@@ -52,6 +52,9 @@ class TemporaryDirectory:
         privacy_assessment: Informational privacy status; it is not an
             attestation of effective host access.
 
+    Use :meth:`detach` to retain a persistent workspace without leaving the
+    parent's operating-system handle or descriptor open.
+
     Raises:
         ValueError: If the namespace or options are invalid.
         TemporaryDirectoryError: If creation or the I/O self-check fails.
@@ -176,6 +179,21 @@ class TemporaryDirectory:
             return
         self._backend.cleanup()
         self._cleaned = True
+
+    def detach(self) -> Path:
+        """Relinquish cleanup ownership while keeping the directory on disk.
+
+        The caller assumes responsibility for the directory and its contents.
+        This releases the backend's retained parent handle or descriptor; it
+        does not delete, rename, or inspect the directory. It is not reversible,
+        and the owner becomes inactive, just as after a successful transfer.
+        """
+        if self._cleaned or self._backend is None:
+            raise TemporaryDirectoryError("temporary directory is not active", code="NOT_ACTIVE")
+        self._backend.detach()
+        self._cleaned = True
+        assert self.path is not None
+        return self.path
 
     def mark_moved_to(self, destination: os.PathLike[str] | str) -> None:
         """Transfer ownership after moving the directory to a sibling path.

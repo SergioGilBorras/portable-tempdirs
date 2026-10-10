@@ -34,6 +34,29 @@ class PortableTempdirsTests(unittest.TestCase):
         managed.cleanup()
         self.assertFalse(root.exists())
 
+    def test_detach_preserves_directory_and_closes_owned_resources(self):
+        parent_owner = temporary_directory("DetachParent")
+        parent = Path(parent_owner.name)
+        managed = temporary_directory("DetachChild", parent=parent)
+        root = Path(managed.name)
+        marker = root / "keep.txt"
+        marker.write_text("preserved", encoding="utf-8")
+        try:
+            retained = managed.detach()
+            self.assertEqual(retained, root)
+            self.assertEqual(marker.read_text(encoding="utf-8"), "preserved")
+            self.assertTrue(root.is_dir())
+            self.assertIsNone(
+                getattr(managed._backend, "parent_handle", getattr(managed._backend, "parent_fd", None))
+            )
+            managed.cleanup()  # The original owner must never delete detached content.
+            self.assertTrue(marker.is_file())
+            with self.assertRaises(TemporaryDirectoryError) as caught:
+                managed.detach()
+            self.assertEqual(caught.exception.code, "NOT_ACTIVE")
+        finally:
+            parent_owner.cleanup()
+
     def test_default_layout_and_utc_random_name(self):
         managed = temporary_directory("PortableTests")
         path = Path(managed.name)
