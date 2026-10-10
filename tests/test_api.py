@@ -34,6 +34,20 @@ class PortableTempdirsTests(unittest.TestCase):
         managed.cleanup()
         self.assertFalse(root.exists())
 
+    def test_context_manager_cleans_after_success_and_exception(self):
+        with temporary_directory("DisposableTests") as raw_path:
+            first = Path(raw_path)
+            (first / "note.txt").write_text("test", encoding="utf-8")
+            self.assertTrue(first.is_dir())
+        self.assertFalse(first.exists())
+
+        with self.assertRaisesRegex(RuntimeError, "expected"):
+            with temporary_directory("DisposableTests") as raw_path:
+                second = Path(raw_path)
+                (second / "note.txt").write_text("test", encoding="utf-8")
+                raise RuntimeError("expected")
+        self.assertFalse(second.exists())
+
     def test_detach_preserves_directory_and_closes_owned_resources(self):
         parent_owner = temporary_directory("DetachParent")
         parent = Path(parent_owner.name)
