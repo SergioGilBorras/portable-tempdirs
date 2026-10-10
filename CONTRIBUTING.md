@@ -8,18 +8,19 @@
 
 ## Local checks
 
-Install the build frontend if it is not already available:
+Create a virtual environment, then install the build frontend in it. Do not install development tools into a global Python installation:
 
 ```console
-python -m pip install build
+python -m venv .venv
 ```
 
-Then run the offline checks and local wheel verification:
+Use `\.venv\Scripts\python.exe` on Windows PowerShell or `.venv/bin/python` on Linux and macOS. The commands below use the POSIX path:
 
 ```console
-python -m unittest discover -s tests -v
-python -m build
-python tests/verify_wheel.py dist
+.venv/bin/python -m pip install build
+.venv/bin/python -m unittest discover -s tests -v
+.venv/bin/python -m build
+.venv/bin/python tests/verify_wheel.py dist
 ```
 
 The tests use `unittest`; pytest is not a runtime or development dependency. Tests for another operating system are skipped on the current platform. Synthetic-link tests may also skip when host policy prevents creating their fixture; each skip reports its reason. Do not elevate privileges, alter ACLs, or weaken sandbox settings to make such a test run.

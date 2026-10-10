@@ -4,19 +4,39 @@
 
 ## Install
 
-Once published, install it with:
+Create and activate a virtual environment, then install the published package:
 
 ```console
-python -m pip install portable-tempdirs
+python -m venv .venv
 ```
 
-To install a checkout locally:
+On Windows PowerShell:
+
+```powershell
+.\.venv\Scripts\python.exe -m pip install portable-tempdirs
+```
+
+On Linux or macOS:
 
 ```console
-python -m pip install .
+.venv/bin/python -m pip install portable-tempdirs
 ```
 
-The package metadata declares version `0.1.0` and Python `>=3.11`. The GitHub Actions matrix is configured for CPython 3.11, 3.12 and 3.13 on Windows, Ubuntu Linux and macOS. The full matrix must pass before claiming support across every listed combination.
+To install a local checkout, run the matching command with `.` instead of the package name.
+
+Windows PowerShell:
+
+```powershell
+.\.venv\Scripts\python.exe -m pip install .
+```
+
+Linux or macOS:
+
+```console
+.venv/bin/python -m pip install .
+```
+
+The package metadata declares version `0.1.1` and Python `>=3.11`. GitHub Actions is configured to test CPython 3.11, 3.12 and 3.13 on Windows, Ubuntu Linux and macOS. A configured matrix does not mean every combination has passed; consult the workflow results for the current status.
 
 ## Quick start
 
@@ -90,7 +110,7 @@ The returned owner exposes:
 - `cleanup()`, which attempts identity-checked cleanup and is a no-op after successful cleanup. It may be retried after a reported failure, without weakening identity checks.
 - `detach()`, which releases the owner's handle/descriptor and retains the directory in place. The caller assumes permanent cleanup responsibility; the owner becomes inactive and a later `cleanup()` is a no-op. Use this for persistent workspaces without leaving handles open.
 - `mark_moved_to(destination)`, which transfers cleanup responsibility after the caller has moved the directory to a sibling path on the same filesystem. This method does not perform the move.
-- `privacy_assessment`, an informational mapping. POSIX reports the literal status `MODE_0700` after checking the directory mode. Windows reports the literal status `NO_VERIFICABLE` (not verifiable), since ACL inheritance is not audited. Neither value attests to host-level effective access.
+- `privacy_assessment`, an informational mapping. POSIX reports the literal status `MODE_0700` after checking the directory mode. Windows reports the literal status `NO_VERIFICABLE` (the implementation's `not verifiable` status), since ACL inheritance is not audited. Neither value attests to host-level effective access.
 
 Use `temporary_directory("my-app").detach()` when a directory must survive after the owning object is discarded. Do not call `detach()` inside a `with` block expecting automatic cleanup; detached content remains for application-managed retention.
 
@@ -125,18 +145,19 @@ For version history, see [CHANGELOG.md](CHANGELOG.md). Contributor setup and sec
 
 ## Development and contribution
 
-Run the offline unit/integration suite:
+Create a development virtual environment before installing tools or running checks:
 
 ```console
-python -m unittest discover -s tests -v
+python -m venv .venv
 ```
 
-Build the wheel and source distribution, then install the wheel into an isolated target and exercise the documented API:
+On Windows PowerShell, use `\.venv\Scripts\python.exe` below; on Linux and macOS, use `.venv/bin/python`. The following commands use the POSIX path:
 
 ```console
-python -m pip install build
-python -m build
-python tests/verify_wheel.py dist
+.venv/bin/python -m pip install build
+.venv/bin/python -m unittest discover -s tests -v
+.venv/bin/python -m build
+.venv/bin/python tests/verify_wheel.py dist
 ```
 
-The wheel verifier needs pip but no network access because installation uses the locally built wheel with `--no-deps`. Platform-specific tests skip when run on another operating system; synthetic-link tests can also skip when host policy prevents creating their fixture. Skip reasons are explicit, and tests do not elevate privileges. Before submitting a change, run the suite on the affected platform, build both archives, inspect their contents, and confirm the GitHub Actions matrix passes. Do not publish a release or upload to PyPI as part of ordinary development.
+The wheel verifier needs pip but no network access because it installs the local wheel with `--no-index` and `--no-deps`. Platform-specific tests skip when run on another operating system; synthetic-link tests can also skip when host policy prevents creating their fixture. Skip reasons are explicit, and tests do not elevate privileges. Before submitting a change, run the suite on the affected platform, build both archives, inspect their contents, and check the GitHub Actions results. Building locally does not publish a package. Do not publish a release or upload to PyPI as part of ordinary development.
