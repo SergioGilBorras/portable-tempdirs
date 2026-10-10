@@ -135,7 +135,9 @@ def _nt_open(parent_handle, name: str, *, ntdll, access: int, share: int, dispos
     if not name or "\\" in name or "/" in name or name in {".", ".."}:
         raise TemporaryDirectoryError("unsafe child name", code="INVALID_CHILD_NAME")
     text = ctypes.create_unicode_buffer(name)
-    us = _UNICODE_STRING(len(name) * 2, len(name) * 2, ctypes.cast(text, wintypes.LPWSTR))
+    # UNICODE_STRING.Length is a byte count of UTF-16 code units, not Python characters.
+    name_size = len(name.encode("utf-16-le"))
+    us = _UNICODE_STRING(name_size, name_size, ctypes.cast(text, wintypes.LPWSTR))
     obj = _OBJECT_ATTRIBUTES(ctypes.sizeof(_OBJECT_ATTRIBUTES), parent_handle, ctypes.pointer(us),
                              _OBJ_CASE_INSENSITIVE, None, None)
     iosb = _IO_STATUS_BLOCK()
