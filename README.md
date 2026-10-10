@@ -34,6 +34,43 @@ with temporary_directory("my-app") as temp_path:
 
 The context manager yields the directory path as a `str` and attempts cleanup on exit. If cleanup fails with no other exception propagating, the cleanup error is raised. If the body is already raising, that original exception remains primary and receives a note about the cleanup failure.
 
+## Directory lifetime: disposable versus persistent
+
+For **one-shot operations**, use a context manager. It creates a fresh directory
+for each invocation and attempts identity-checked recursive cleanup when the
+block finishes, including when the body raises an exception:
+
+```python
+from pathlib import Path
+from portable_tempdirs import temporary_directory
+
+with temporary_directory("my-app") as path:
+    workspace = Path(path)
+    (workspace / "result.txt").write_text("done", encoding="utf-8")
+# The managed directory has been removed if cleanup succeeded.
+```
+
+For **intentionally persistent data**, explicitly detach the owner:
+
+```python
+from portable_tempdirs import temporary_directory
+
+owner = temporary_directory("my-app")
+persistent_path = owner.detach()
+# The path remains and its native parent handle/descriptor is released.
+# The application, not portable-tempdirs, is now responsible for retention
+# and eventual safe removal.
+```
+
+`detach()` never removes the directory, and a subsequent `cleanup()` on the
+detached owner does nothing. Calling `detach()` inside a context manager also
+prevents that context manager from removing the directory. Do not detach
+one-shot workspaces. The library cannot guarantee cleanup when permissions,
+sharing conflicts, active processes, or filesystem races prevent deletion:
+it raises an error and may leave a partially cleaned directory. A namespace
+container under the system temporary root can remain even after all its
+managed children have been removed.
+
 ## Public API
 
 The package exports `TemporaryDirectory`, `TemporaryDirectoryError` and `temporary_directory`.
