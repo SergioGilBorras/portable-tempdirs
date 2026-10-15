@@ -10,9 +10,10 @@ Create a virtual environment; all commands below install into that environment, 
 python -m venv .venv
 ```
 
-Version `0.1.1` is not published to PyPI. Obtain the verified
-`portable_tempdirs-0.1.1-py3-none-any.whl` from the maintainer, or build
-it from this checkout. Installing by package name from an index does **not**
+The checked-in source is version `0.1.2`. PyPI availability of that
+version has not been verified; do not assume `pip install portable-tempdirs`
+resolves to this exact source. Obtain a wheel built and verified from the
+approved `0.1.2` commit, or build it from this checkout. Installing by package name from an index does **not**
 guarantee that you get this source version or the `detach()` API.
 
 To install the local wheel **offline** (adjust the file path if the wheel was
@@ -21,13 +22,13 @@ delivered elsewhere):
 On Windows PowerShell:
 
 ```powershell
-.\.venv\Scripts\python.exe -m pip install --no-index --no-deps .\dist\portable_tempdirs-0.1.1-py3-none-any.whl
+.\.venv\Scripts\python.exe -m pip install --no-index --no-deps .\dist\portable_tempdirs-0.1.2-py3-none-any.whl
 ```
 
 On Linux or macOS:
 
 ```console
-.venv/bin/python -m pip install --no-index --no-deps ./dist/portable_tempdirs-0.1.1-py3-none-any.whl
+.venv/bin/python -m pip install --no-index --no-deps ./dist/portable_tempdirs-0.1.2-py3-none-any.whl
 ```
 
 The `dist/` directory is generated build output and is excluded from Git;
@@ -52,11 +53,11 @@ After installation, verify that the interpreter can use the required API:
 from importlib.metadata import version
 from portable_tempdirs import TemporaryDirectory
 
-assert version("portable-tempdirs") == "0.1.1"
+assert version("portable-tempdirs") == "0.1.2"
 assert callable(getattr(TemporaryDirectory, "detach", None))
 ```
 
-The package metadata declares version `0.1.1` and Python `>=3.11`. GitHub Actions is configured to test CPython 3.11, 3.12 and 3.13 on Windows, Ubuntu Linux and macOS. A configured matrix does not mean every combination has passed; consult the workflow results for the current status.
+The package metadata declares version `0.1.2` and Python `>=3.11`. GitHub Actions is configured to test CPython 3.11, 3.12 and 3.13 on Windows, Ubuntu Linux and macOS. A configured matrix does not mean every combination has passed; consult the workflow results for the current status.
 
 ## Quick start
 
