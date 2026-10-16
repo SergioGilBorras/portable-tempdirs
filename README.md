@@ -187,6 +187,6 @@ On Windows PowerShell, use `\.venv\Scripts\python.exe` below; on Linux and macOS
 
 The wheel verifier needs pip but no network access because it installs the local wheel with `--no-index` and `--no-deps`. Platform-specific tests skip when run on another operating system; synthetic-link tests can also skip when host policy prevents creating their fixture. Skip reasons are explicit, and tests do not elevate privileges. Before submitting a change, run the suite on the affected platform, build both archives, inspect their contents, and check the GitHub Actions results. Building locally does not publish a package. Do not publish a release or upload to PyPI as part of ordinary development.
 
-## Maintainer
+## Author and maintainer
 
-Sergio Gil-Borrás.
+See [AUTHORS.md](AUTHORS.md) for project authorship and maintenance.
