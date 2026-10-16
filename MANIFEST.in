@@ -1,5 +1,6 @@
 include LICENSE
 include README.md
+include AUTHORS.md
 include CONTRIBUTING.md
 include .github/workflows/ci.yml
 include tests/verify_wheel.py
