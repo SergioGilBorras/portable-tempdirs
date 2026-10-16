@@ -4,6 +4,8 @@ A lightweight Python library for reliable temporary directory management on Wind
 
 `portable-tempdirs` uses only the Python standard library at runtime and provides managed directory lifecycles on Windows, Linux and macOS. Creation includes an I/O self-check, and cleanup verifies directory identity before removing owned content.
 
+`portable-tempdirs` was developed to address permission and cleanup issues that can arise when using Python's standard `tempfile` utilities in restricted sandbox environments, such as those used by Codex or Claude Code, providing validated directory creation and safer cleanup without bypassing sandbox security restrictions.
+
 ## Install
 
 Use a virtual environment for installation, development and verification. The
