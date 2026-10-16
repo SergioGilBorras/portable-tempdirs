@@ -1,38 +1,40 @@
 # portable-tempdirs
 
-`portable-tempdirs` is a small, standard-library-only Python package for creating and managing temporary directory trees. It creates a directory immediately, checks that it can write and read a small probe file, and provides conservative cleanup tied to the identity of the created directory.
+A lightweight Python library for reliable temporary directory management on Windows and Linux, featuring isolated workspaces, atomic creation, I/O validation, and controlled cleanup.
+
+`portable-tempdirs` uses only the Python standard library at runtime and provides managed directory lifecycles on Windows, Linux and macOS. Creation includes an I/O self-check, and cleanup verifies directory identity before removing owned content.
 
 ## Install
 
-Create a virtual environment; all commands below install into that environment, not global Python:
+Use a virtual environment for installation, development and verification. The
+source version is `0.1.2` and requires Python `>=3.11`.
 
 ```console
 python -m venv .venv
 ```
 
-Version `0.1.1` is not published to PyPI. Obtain the verified
-`portable_tempdirs-0.1.1-py3-none-any.whl` from the maintainer, or build
-it from this checkout. Installing by package name from an index does **not**
-guarantee that you get this source version or the `detach()` API.
+### Install a verified local wheel
 
-To install the local wheel **offline** (adjust the file path if the wheel was
-delivered elsewhere):
+Obtain `portable_tempdirs-0.1.2-py3-none-any.whl` from the maintainer or
+build it from the matching source checkout. The generated `dist/` directory is
+ignored by Git and is not part of a fresh clone. Do not assume that a package
+index provides this exact build or the required `detach()` API.
 
 On Windows PowerShell:
 
 ```powershell
-.\.venv\Scripts\python.exe -m pip install --no-index --no-deps .\dist\portable_tempdirs-0.1.1-py3-none-any.whl
+.\.venv\Scripts\python.exe -m pip install --no-index --no-deps .\dist\portable_tempdirs-0.1.2-py3-none-any.whl
 ```
 
 On Linux or macOS:
 
 ```console
-.venv/bin/python -m pip install --no-index --no-deps ./dist/portable_tempdirs-0.1.1-py3-none-any.whl
+.venv/bin/python -m pip install --no-index --no-deps ./dist/portable_tempdirs-0.1.2-py3-none-any.whl
 ```
 
-The `dist/` directory is generated build output and is excluded from Git;
-the wheel is **not** included in a fresh clone. To install the checked-out
-source instead, run:
+Use the absolute path to the wheel if it is stored outside the checkout.
+
+### Install from the checked-out source
 
 On Windows PowerShell:
 
@@ -46,17 +48,20 @@ On Linux or macOS:
 .venv/bin/python -m pip install .
 ```
 
-After installation, verify that the interpreter can use the required API:
+Verify the installed API **with the Python interpreter of the consuming
+virtual environment**:
 
 ```python
 from importlib.metadata import version
 from portable_tempdirs import TemporaryDirectory
 
-assert version("portable-tempdirs") == "0.1.1"
+assert version("portable-tempdirs") == "0.1.2"
 assert callable(getattr(TemporaryDirectory, "detach", None))
 ```
 
-The package metadata declares version `0.1.1` and Python `>=3.11`. GitHub Actions is configured to test CPython 3.11, 3.12 and 3.13 on Windows, Ubuntu Linux and macOS. A configured matrix does not mean every combination has passed; consult the workflow results for the current status.
+GitHub Actions tests CPython 3.11, 3.12 and 3.13 on Windows, Ubuntu Linux
+and macOS. Consult the latest CI run for the current status; a configured
+matrix is not evidence of a successful run.
 
 ## Quick start
 
@@ -149,7 +154,7 @@ Current `TemporaryDirectoryError.code` values are `CLEANUP_INCOMPLETE`, `COLLISI
 - Names are created exclusively and include a cryptographically random component. Collisions are retried a bounded number of times; existing entries are not reused or deleted.
 - Both backends perform a write/read self-check before returning. Failure is reported; the package does not silently select another temporary root.
 - POSIX creation uses directory-relative operations, `O_NOFOLLOW`/`O_DIRECTORY` where available, mode `0700`, and inode/device identity checks. Cleanup requires a `shutil.rmtree` implementation that advertises symlink-attack resistance. Symlinks inside the tree are unlinked as entries; their targets are not traversed.
-- Windows uses exclusive handle-relative creation, handle-bound enumeration and identity checks. Cleanup rejects reparse points, identity changes and sharing/access failures. It does not fall back to path-based recursive deletion.
+- Windows uses exclusive handle-relative creation, handle-bound enumeration and identity checks. Cleanup rejects reparse points and identity changes. It retries only recognized transient sharing/lock failures for a bounded period with identity-checked reopening; persistent sharing/access failures still raise. It does not fall back to path-based recursive deletion.
 - The Windows backend uses the native `NtCreateFile` entry point from `ntdll` for relative opens. This is not a documented stable Win32 API. Filesystems and Windows versions not exercised by CI may reject operations; the backend fails closed in that case.
 - Explicit parents are a trust boundary. The final parent component is opened without following a link on Windows and on POSIX systems that provide `O_NOFOLLOW`. On POSIX systems without that flag, the backend cannot provide that final-component no-follow guarantee. Ancestors are not independently secured on either platform. Do not use a parent that an untrusted process can replace or modify concurrently. In particular, POSIX `mkdir` returns no directory handle; the implementation opens the new random name immediately afterward. A hostile process able to race changes in a shared writable parent is outside the guarantee.
 - The package does not change ACLs, permissions outside the new directory, environment variables or system configuration. It does not elevate privileges or bypass sandbox restrictions. POSIX mode `0700` is not a claim about all host-level access controls; Windows inherits parent ACLs and does not report effective privacy.
@@ -157,11 +162,11 @@ Current `TemporaryDirectoryError.code` values are `CLEANUP_INCOMPLETE`, `COLLISI
 
 ## Compatibility
 
-The intended targets are Windows and POSIX systems, including Linux and macOS, with CPython 3.11-3.13. Local validation is platform-dependent; see the CI workflow and release notes for combinations actually exercised. The POSIX backend requires descriptor-relative filesystem operations and a symlink-resistant `shutil.rmtree`. Windows behavior depends on native API and filesystem support. No guarantee is made for network filesystems, unusual filesystems, or Windows releases not covered by CI.
+The intended targets are Windows and POSIX systems, including Linux and macOS, with CPython 3.11-3.13. Local validation is platform-dependent; see the CI workflow and its latest run for combinations actually exercised. The POSIX backend requires descriptor-relative filesystem operations and a symlink-resistant `shutil.rmtree`. Windows behavior depends on native API and filesystem support. No guarantee is made for network filesystems, unusual filesystems, or Windows releases not covered by CI.
 
 There are no runtime dependencies. Building from source uses the `setuptools` build backend declared in `pyproject.toml`.
 
-For version history, see [CHANGELOG.md](CHANGELOG.md). Contributor setup and security-sensitive review expectations are in [CONTRIBUTING.md](CONTRIBUTING.md).
+Contributor setup and security-sensitive review expectations are in [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Development and contribution
 
@@ -181,3 +186,7 @@ On Windows PowerShell, use `\.venv\Scripts\python.exe` below; on Linux and macOS
 ```
 
 The wheel verifier needs pip but no network access because it installs the local wheel with `--no-index` and `--no-deps`. Platform-specific tests skip when run on another operating system; synthetic-link tests can also skip when host policy prevents creating their fixture. Skip reasons are explicit, and tests do not elevate privileges. Before submitting a change, run the suite on the affected platform, build both archives, inspect their contents, and check the GitHub Actions results. Building locally does not publish a package. Do not publish a release or upload to PyPI as part of ordinary development.
+
+## Maintainer
+
+Sergio Gil-Borrás.
