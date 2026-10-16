@@ -5,12 +5,12 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "portable-tempdirs"
 version = "0.1.2"
-description = "Secure, cross-platform managed temporary directories"
+description = "A lightweight Python library for reliable temporary directory management on Windows and Linux, featuring isolated workspaces, atomic creation, I/O validation, and controlled cleanup."
 readme = "README.md"
 requires-python = ">=3.11"
 license = "MIT"
 license-files = ["LICENSE"]
-authors = [{ name = "portable-tempdirs contributors" }]
+authors = [{ name = "Sergio Gil-Borrás" }]
 classifiers = [
   "Development Status :: 3 - Alpha",
   "Operating System :: Microsoft :: Windows",
